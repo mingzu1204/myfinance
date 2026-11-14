@@ -217,7 +217,7 @@ function ApprovalModal({ isOpen, onClose, brand, onSuccess }: ApprovalModalProps
       })
       if (!res.ok) throw new Error('Lỗi khi duyệt lương')
       const data = await res.json()
-      const newBalance: number = data.wallet?.cash_balance ?? 0
+      const newBalance: number = Number(data.wallet?.cash_balance ?? received)
       onClose()
       onSuccess(received, newBalance)
     } catch (e: unknown) {
@@ -668,10 +668,10 @@ export default function BrandsPanel() {
     setError('')
     try {
       const [presetsRes, openCyclesRes, closedCyclesRes, wishesRes] = await Promise.all([
-        fetch('/api/presets'),
-        fetch('/api/cycles?status=open'),
-        fetch('/api/cycles?status=closed'),
-        fetch('/api/wishes'),
+        fetch('/api/presets', { cache: 'no-store' }),
+        fetch('/api/cycles?status=open', { cache: 'no-store' }),
+        fetch('/api/cycles?status=closed', { cache: 'no-store' }),
+        fetch('/api/wishes', { cache: 'no-store' }),
       ])
 
       const [presetsData, openCycles, closedCycles, wishData] = await Promise.all([

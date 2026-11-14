@@ -1,15 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from('wallet')
       .select('*')
       .eq('id', 1)
-      .single();
+      .maybeSingle();
 
-    if (error) throw error;
+    if (!data) {
+      const { data: created } = await supabase
+        .from('wallet')
+        .upsert({ id: 1, cash_balance: 0, last_updated: new Date().toISOString() })
+        .select()
+        .single();
+      data = created || { id: 1, cash_balance: 0 };
+    }
 
     return NextResponse.json(data);
   } catch (error: any) {
@@ -33,27 +42,25 @@ export async function PUT(request: NextRequest) {
     }
 
     // Fetch current wallet
-    const { data: wallet, error: fetchError } = await supabase
+    let { data: wallet } = await supabase
       .from('wallet')
       .select('cash_balance')
       .eq('id', 1)
-      .single();
+      .maybeSingle();
 
-    if (fetchError) throw fetchError;
-
+    const currentBalance = Number(wallet?.cash_balance ?? 0);
     let newBalance: number;
     if (operation === 'add') {
-      newBalance = (wallet.cash_balance ?? 0) + amount;
+      newBalance = currentBalance + amount;
     } else if (operation === 'subtract') {
-      newBalance = (wallet.cash_balance ?? 0) - amount;
+      newBalance = currentBalance - amount;
     } else {
       newBalance = amount;
     }
 
     const { data, error } = await supabase
       .from('wallet')
-      .update({ cash_balance: newBalance, last_updated: new Date().toISOString() })
-      .eq('id', 1)
+      .upsert({ id: 1, cash_balance: newBalance, last_updated: new Date().toISOString() })
       .select()
       .single();
 

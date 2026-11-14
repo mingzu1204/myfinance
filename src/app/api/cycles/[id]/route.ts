@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 
+export const dynamic = 'force-dynamic';
+
 export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -47,21 +49,24 @@ export async function PUT(
     if (cycleUpdateError) throw cycleUpdateError;
 
     // 3. Update wallet: cash_balance += total_received
-    const { data: wallet, error: walletReadError } = await supabase
+    let { data: wallet } = await supabase
       .from('wallet')
       .select('cash_balance')
       .eq('id', 1)
-      .single();
+      .maybeSingle();
 
-    if (walletReadError) throw walletReadError;
+    const currentBal = Number(wallet?.cash_balance ?? 0);
+    const newBal = currentBal + Number(total_received);
 
-    const { error: walletUpdateError } = await supabase
+    const { data: updatedWallet, error: walletUpdateError } = await supabase
       .from('wallet')
-      .update({
-        cash_balance: (wallet.cash_balance ?? 0) + total_received,
+      .upsert({
+        id: 1,
+        cash_balance: newBal,
         last_updated: now,
       })
-      .eq('id', 1);
+      .select()
+      .single();
 
     if (walletUpdateError) throw walletUpdateError;
 
@@ -101,7 +106,12 @@ export async function PUT(
 
     if (newCycleError) throw newCycleError;
 
-    return NextResponse.json({ cycle: updatedCycle, new_cycle: newCycle, diff_amount });
+    return NextResponse.json({
+      cycle: updatedCycle,
+      new_cycle: newCycle,
+      diff_amount,
+      wallet: updatedWallet || { id: 1, cash_balance: newBal },
+    });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
