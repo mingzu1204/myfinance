@@ -36,7 +36,11 @@ export async function GET(request: NextRequest) {
       job_presets: item.job_presets || item.preset,
     }));
 
-    return NextResponse.json(formattedData);
+    return NextResponse.json(formattedData, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+      },
+    });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

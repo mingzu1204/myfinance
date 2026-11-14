@@ -56,7 +56,14 @@ export async function DELETE() {
       console.error('Error resetting wallet:', e);
     }
 
-    return NextResponse.json({ success: true, cash_balance: 0 });
+    return NextResponse.json(
+      { success: true, cash_balance: 0 },
+      {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+        },
+      }
+    );
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

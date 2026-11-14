@@ -667,11 +667,12 @@ export default function BrandsPanel() {
     setLoading(true)
     setError('')
     try {
+      const ts = Date.now()
       const [presetsRes, openCyclesRes, closedCyclesRes, wishesRes] = await Promise.all([
-        fetch('/api/presets', { cache: 'no-store' }),
-        fetch('/api/cycles?status=open', { cache: 'no-store' }),
-        fetch('/api/cycles?status=closed', { cache: 'no-store' }),
-        fetch('/api/wishes', { cache: 'no-store' }),
+        fetch(`/api/presets?_t=${ts}`, { cache: 'no-store' }),
+        fetch(`/api/cycles?status=open&_t=${ts}`, { cache: 'no-store' }),
+        fetch(`/api/cycles?status=closed&_t=${ts}`, { cache: 'no-store' }),
+        fetch(`/api/wishes?_t=${ts}`, { cache: 'no-store' }),
       ])
 
       const [presetsData, openCycles, closedCycles, wishData] = await Promise.all([

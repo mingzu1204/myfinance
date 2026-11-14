@@ -531,12 +531,13 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
     try {
       setLoading(true)
 
+      const ts = Date.now()
       const [walletRes, cyclesRes, sessionsRes, recentRes, presetsRes] = await Promise.allSettled([
-        fetch('/api/wallet', { cache: 'no-store' }),
-        fetch('/api/cycles?status=open', { cache: 'no-store' }),
-        fetch('/api/sessions?status=pending', { cache: 'no-store' }),
-        fetch('/api/sessions?limit=10', { cache: 'no-store' }),
-        fetch('/api/presets', { cache: 'no-store' }),
+        fetch(`/api/wallet?_t=${ts}`, { cache: 'no-store' }),
+        fetch(`/api/cycles?status=open&_t=${ts}`, { cache: 'no-store' }),
+        fetch(`/api/sessions?status=pending&_t=${ts}`, { cache: 'no-store' }),
+        fetch(`/api/sessions?limit=10&_t=${ts}`, { cache: 'no-store' }),
+        fetch(`/api/presets?_t=${ts}`, { cache: 'no-store' }),
       ])
 
       // Presets mapping
