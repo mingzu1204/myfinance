@@ -29,9 +29,10 @@ export async function GET() {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
-    const { amount, operation } = body as {
+    const { amount, operation, note } = body as {
       amount: number;
       operation: 'add' | 'set' | 'subtract';
+      note?: string;
     };
 
     if (typeof amount !== 'number') {
@@ -53,18 +54,34 @@ export async function PUT(request: NextRequest) {
     if (operation === 'add') {
       newBalance = currentBalance + amount;
     } else if (operation === 'subtract') {
-      newBalance = currentBalance - amount;
+      newBalance = Math.max(0, currentBalance - amount);
     } else {
-      newBalance = amount;
+      newBalance = Math.max(0, amount);
     }
 
+    const now = new Date().toISOString();
     const { data, error } = await supabase
       .from('wallet')
-      .upsert({ id: 1, cash_balance: newBalance, last_updated: new Date().toISOString() })
+      .upsert({ id: 1, cash_balance: newBalance, last_updated: now })
       .select()
       .single();
 
     if (error) throw error;
+
+    // Record transaction
+    const txAmount = operation === 'subtract' ? -amount : (operation === 'add' ? amount : (newBalance - currentBalance));
+    const txDesc = note?.trim() || (operation === 'add' ? 'Nạp thêm tiền mặt' : operation === 'subtract' ? 'Rút/Chi tiêu tiền mặt' : 'Điều chỉnh số dư ví');
+
+    try {
+      await supabase.from('transactions').insert({
+        type: operation === 'add' ? 'manual_add' : operation === 'subtract' ? 'manual_subtract' : 'manual_set',
+        amount: txAmount,
+        description: txDesc,
+        created_at: now,
+      });
+    } catch (e) {
+      console.error('Failed to log transaction:', e);
+    }
 
     return NextResponse.json(data);
   } catch (error: any) {

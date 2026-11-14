@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { formatVND } from '@/lib/calculations'
 import {
@@ -14,6 +14,11 @@ import {
   Zap,
   Calendar,
   Timer,
+  Edit3,
+  Plus,
+  Minus,
+  RotateCcw,
+  X,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -136,9 +141,10 @@ interface BalanceCardProps {
   gradient: string
   icon: React.ReactNode
   delay?: number
+  onEdit?: () => void
 }
 
-function BalanceCard({ title, amount, subtitle, gradient, icon, delay = 0 }: BalanceCardProps) {
+function BalanceCard({ title, amount, subtitle, gradient, icon, delay = 0, onEdit }: BalanceCardProps) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -152,9 +158,23 @@ function BalanceCard({ title, amount, subtitle, gradient, icon, delay = 0 }: Bal
       <div className="absolute left-1/2 -bottom-10 w-40 h-40 rounded-full bg-white/5 pointer-events-none" />
 
       <div className="relative z-10">
-        <div className="flex items-center gap-2 text-white/70">
-          {icon}
-          <p className="text-sm font-medium">{title}</p>
+        <div className="flex items-center justify-between text-white/80">
+          <div className="flex items-center gap-2">
+            {icon}
+            <p className="text-sm font-medium">{title}</p>
+          </div>
+          {onEdit && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                onEdit()
+              }}
+              className="px-2.5 py-1 rounded-xl bg-white/20 hover:bg-white/30 active:scale-95 text-white text-xs font-medium flex items-center gap-1.5 transition-all backdrop-blur-sm border border-white/20 shadow-sm"
+            >
+              <Edit3 size={13} />
+              Chỉnh sửa
+            </button>
+          )}
         </div>
         <div className="mt-2 text-4xl md:text-5xl font-bold text-white tracking-tight leading-none">
           <AnimatedNumber value={amount} />
@@ -183,6 +203,242 @@ function RealtimeClock() {
       <p className="text-lg font-semibold text-white tabular-nums">{timeStr}</p>
       <p className="text-xs text-gray-500 capitalize">{dateStr}</p>
     </div>
+  )
+}
+
+// ─── Wallet Adjust Modal ───────────────────────────────────────────────────
+
+interface WalletAdjustModalProps {
+  isOpen: boolean
+  onClose: () => void
+  currentBalance: number
+  onSuccess: (newBalance: number) => void
+}
+
+function WalletAdjustModal({ isOpen, onClose, currentBalance, onSuccess }: WalletAdjustModalProps) {
+  const [op, setOp] = useState<'add' | 'subtract' | 'set'>('add')
+  const [amountRaw, setAmountRaw] = useState('')
+  const [note, setNote] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    if (isOpen) {
+      setAmountRaw('')
+      setNote('')
+      setOp('add')
+    }
+  }, [isOpen])
+
+  const parsedAmount = parseInt(amountRaw.replace(/\D/g, ''), 10) || 0
+
+  const computedNewBalance = useMemo(() => {
+    if (op === 'add') return currentBalance + parsedAmount
+    if (op === 'subtract') return Math.max(0, currentBalance - parsedAmount)
+    return parsedAmount
+  }, [op, currentBalance, parsedAmount])
+
+  const handleAmountChange = (val: string) => {
+    const digits = val.replace(/\D/g, '')
+    setAmountRaw(digits ? parseInt(digits, 10).toLocaleString('vi-VN') : '')
+  }
+
+  const addQuickChip = (num: number) => {
+    const next = parsedAmount + num
+    setAmountRaw(next.toLocaleString('vi-VN'))
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (parsedAmount <= 0 && op !== 'set') {
+      toast.error('Vui lòng nhập số tiền')
+      return
+    }
+
+    try {
+      setLoading(true)
+      const res = await fetch('/api/wallet', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: parsedAmount,
+          operation: op,
+          note: note.trim() || undefined,
+        }),
+      })
+
+      if (!res.ok) throw new Error('Cập nhật thất bại')
+      const data = await res.json()
+      const newBal = Number(data.cash_balance ?? computedNewBalance)
+      toast.success(
+        op === 'add'
+          ? `+${parsedAmount.toLocaleString('vi-VN')} ₫ vào ví!`
+          : op === 'subtract'
+          ? `-${parsedAmount.toLocaleString('vi-VN')} ₫ khỏi ví!`
+          : `Đã đặt số dư ví: ${newBal.toLocaleString('vi-VN')} ₫`
+      )
+      onSuccess(newBal)
+      onClose()
+    } catch (err: any) {
+      toast.error(err.message || 'Lỗi khi cập nhật tiền')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-[100] flex items-end md:items-center justify-center p-0 md:p-4"
+          onClick={onClose}
+        >
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+          <motion.div
+            initial={{ y: '100%', opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: '100%', opacity: 0 }}
+            transition={{ type: 'spring', damping: 26, stiffness: 300 }}
+            className="relative w-full max-w-md bg-[#1a1a1a] rounded-t-3xl md:rounded-2xl border border-[#2a2a2a] p-6 space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-[#2a2a2a]">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-violet-600/20 flex items-center justify-center text-violet-400">
+                  <Wallet size={16} />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-white text-base">Chỉnh sửa tiền mặt</h3>
+                  <p className="text-xs text-gray-400">
+                    Hiện có: <span className="text-violet-400 font-semibold">{formatVND(currentBalance)}</span>
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={onClose}
+                className="p-1.5 rounded-xl hover:bg-[#222] text-gray-400 hover:text-white transition-colors"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Operation Type Switcher */}
+            <div className="grid grid-cols-3 gap-1.5 p-1 bg-[#141414] border border-[#2a2a2a] rounded-xl">
+              <button
+                type="button"
+                onClick={() => setOp('add')}
+                className={`py-2 px-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
+                  op === 'add'
+                    ? 'bg-emerald-600 text-white shadow-md'
+                    : 'text-gray-400 hover:text-gray-200'
+                }`}
+              >
+                <Plus size={14} /> Nạp thêm
+              </button>
+              <button
+                type="button"
+                onClick={() => setOp('subtract')}
+                className={`py-2 px-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
+                  op === 'subtract'
+                    ? 'bg-red-600 text-white shadow-md'
+                    : 'text-gray-400 hover:text-gray-200'
+                }`}
+              >
+                <Minus size={14} /> Rút bớt
+              </button>
+              <button
+                type="button"
+                onClick={() => setOp('set')}
+                className={`py-2 px-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
+                  op === 'set'
+                    ? 'bg-violet-600 text-white shadow-md'
+                    : 'text-gray-400 hover:text-gray-200'
+                }`}
+              >
+                <RotateCcw size={13} /> Đặt lại
+              </button>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Amount input */}
+              <div className="space-y-1.5">
+                <label className="text-xs text-gray-400 font-medium">
+                  {op === 'add' ? 'Số tiền muốn cộng (+)' : op === 'subtract' ? 'Số tiền muốn trừ (-)' : 'Số tiền mới đặt lại'}
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={amountRaw}
+                    onChange={(e) => handleAmountChange(e.target.value)}
+                    placeholder="0"
+                    autoFocus
+                    className="w-full px-4 py-3 rounded-xl text-white bg-[#222] border border-[#2a2a2a] outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 text-lg font-mono pr-9"
+                  />
+                  <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-500 font-semibold">₫</span>
+                </div>
+              </div>
+
+              {/* Quick Amount Chips */}
+              <div className="flex flex-wrap gap-1.5">
+                {[50000, 100000, 200000, 500000, 1000000, 2000000].map((num) => (
+                  <button
+                    key={num}
+                    type="button"
+                    onClick={() => addQuickChip(num)}
+                    className="px-2.5 py-1 rounded-lg bg-[#222] hover:bg-[#2a2a2a] border border-[#333] text-gray-300 text-xs font-medium transition-colors"
+                  >
+                    +{num >= 1000000 ? `${num / 1000000}tr` : `${num / 1000}k`}
+                  </button>
+                ))}
+              </div>
+
+              {/* Realtime calculation preview */}
+              <div className="p-3 bg-[#141414] border border-[#2a2a2a] rounded-xl flex items-center justify-between text-xs">
+                <span className="text-gray-400">Số dư sau khi lưu:</span>
+                <span className={`text-sm font-bold font-mono ${op === 'add' ? 'text-emerald-400' : op === 'subtract' ? 'text-red-400' : 'text-violet-400'}`}>
+                  {formatVND(computedNewBalance)}
+                </span>
+              </div>
+
+              {/* Note input */}
+              <div className="space-y-1.5">
+                <label className="text-xs text-gray-400 font-medium">Ghi chú (tùy chọn)</label>
+                <input
+                  type="text"
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  placeholder={op === 'subtract' ? 'VD: Ăn tối, mua sắm...' : op === 'add' ? 'VD: Thưởng thêm, nạp tiền...' : 'VD: Đếm lại tiền ví...'}
+                  className="w-full px-4 py-2.5 rounded-xl text-white bg-[#222] border border-[#2a2a2a] outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 text-sm placeholder:text-gray-600"
+                />
+              </div>
+
+              {/* Action buttons */}
+              <div className="flex gap-2.5 pt-1">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="flex-1 py-2.5 px-4 rounded-xl bg-[#222] hover:bg-[#2a2a2a] text-gray-300 text-sm font-medium border border-[#333] transition-colors"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="flex-1 py-2.5 px-4 rounded-xl bg-violet-600 hover:bg-violet-700 disabled:opacity-50 text-white text-sm font-medium transition-colors flex items-center justify-center gap-1.5 shadow-lg shadow-violet-600/30"
+                >
+                  {loading ? 'Đang lưu...' : 'Xác nhận'}
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   )
 }
 
@@ -266,6 +522,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
   const [recentSessions, setRecentSessions] = useState<WorkSession[]>([])
   const [loading, setLoading] = useState(true)
   const [showResetDialog, setShowResetDialog] = useState(false)
+  const [showWalletModal, setShowWalletModal] = useState(false)
   const [resetting, setResetting] = useState(false)
 
   const [presetsMap, setPresetsMap] = useState<Record<string, JobPreset>>({})
@@ -361,8 +618,12 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
       setResetting(true)
       const res = await fetch('/api/reset', { method: 'DELETE' })
       if (!res.ok) throw new Error('Reset failed')
-      toast.success('Đã reset dữ liệu thành công')
-      setTimeout(() => window.location.reload(), 800)
+      setCashBalance(0)
+      setPendingTotal(0)
+      setBrandGroups([])
+      setRecentSessions([])
+      toast.success('Đã reset toàn bộ dữ liệu thành công')
+      setTimeout(() => window.location.reload(), 600)
     } catch {
       toast.error('Reset thất bại, thử lại sau')
     } finally {
@@ -424,6 +685,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
               gradient="bg-gradient-to-br from-violet-600 to-violet-800"
               icon={<Wallet size={16} />}
               delay={0}
+              onEdit={() => setShowWalletModal(true)}
             />
             <BalanceCard
               title="Lương Chờ Nhận"
@@ -618,6 +880,16 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
           </button>
         </section>
       </div>
+
+      {/* ── Wallet Adjust Modal ── */}
+      <WalletAdjustModal
+        isOpen={showWalletModal}
+        onClose={() => setShowWalletModal(false)}
+        currentBalance={cashBalance}
+        onSuccess={(newBal) => {
+          setCashBalance(newBal)
+        }}
+      />
 
       {/* ── Reset Confirm Dialog ── */}
       <ConfirmDialog

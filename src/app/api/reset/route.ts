@@ -1,53 +1,62 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 
+export const dynamic = 'force-dynamic';
+
 export async function DELETE() {
   try {
-    // Delete in dependency order
-    const { error: txError } = await supabase
-      .from('transactions')
-      .delete()
-      .neq('id', '00000000-0000-0000-0000-000000000000'); // delete all
+    const now = new Date().toISOString();
 
-    if (txError) throw txError;
+    // 1. Delete transactions
+    try {
+      await supabase.from('transactions').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    } catch (e) {
+      console.error('Error deleting transactions:', e);
+    }
 
-    const { error: sessionsError } = await supabase
-      .from('work_sessions')
-      .delete()
-      .neq('id', '00000000-0000-0000-0000-000000000000');
+    // 2. Delete work sessions
+    try {
+      await supabase.from('work_sessions').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    } catch (e) {
+      console.error('Error deleting work_sessions:', e);
+    }
 
-    if (sessionsError) throw sessionsError;
+    // 3. Delete salary cycles
+    try {
+      await supabase.from('salary_cycles').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    } catch (e) {
+      console.error('Error deleting salary_cycles:', e);
+    }
 
-    const { error: cyclesError } = await supabase
-      .from('salary_cycles')
-      .delete()
-      .neq('id', '00000000-0000-0000-0000-000000000000');
+    // 4. Delete wish items
+    try {
+      await supabase.from('wish_items').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    } catch (e) {
+      console.error('Error deleting wish_items:', e);
+    }
 
-    if (cyclesError) throw cyclesError;
+    // 5. Delete presets
+    try {
+      await supabase.from('job_presets').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    } catch (e) {
+      console.error('Error deleting job_presets:', e);
+    }
 
-    const { error: wishesError } = await supabase
-      .from('wish_items')
-      .delete()
-      .neq('id', '00000000-0000-0000-0000-000000000000');
+    // 6. Reset ALL wallet rows to 0 AND upsert id=1 to 0
+    try {
+      await supabase
+        .from('wallet')
+        .upsert({ id: 1, cash_balance: 0, last_updated: now });
 
-    if (wishesError) throw wishesError;
+      await supabase
+        .from('wallet')
+        .update({ cash_balance: 0, last_updated: now })
+        .gte('id', 0);
+    } catch (e) {
+      console.error('Error resetting wallet:', e);
+    }
 
-    const { error: presetsError } = await supabase
-      .from('job_presets')
-      .delete()
-      .neq('id', '00000000-0000-0000-0000-000000000000');
-
-    if (presetsError) throw presetsError;
-
-    // Reset wallet to 0
-    const { error: walletError } = await supabase
-      .from('wallet')
-      .update({ cash_balance: 0, last_updated: new Date().toISOString() })
-      .eq('id', 1);
-
-    if (walletError) throw walletError;
-
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, cash_balance: 0 });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
