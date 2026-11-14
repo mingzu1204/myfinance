@@ -261,7 +261,9 @@ export default function WorkHistory() {
 
               <div className="space-y-2.5">
                 {daySessions.map((session) => {
-                  const presetColor = session.preset?.color || '#7c3aed'
+                  const presetObj = session.preset || (session as any).job_presets || presets.find((p) => p.id === session.preset_id)
+                  const presetName = presetObj?.name || 'Công việc'
+                  const presetColor = presetObj?.color || '#7c3aed'
                   const isNight = Number(session.night_hours) > 0
                   const isApproved = session.status === 'approved'
 
@@ -277,7 +279,7 @@ export default function WorkHistory() {
                         <div className="space-y-1.5">
                           <div className="flex items-center gap-2">
                             <span className="font-semibold text-white text-base">
-                              {session.preset?.name || 'Công việc'}
+                              {presetName}
                             </span>
                             <span
                               className={`inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full font-medium ${

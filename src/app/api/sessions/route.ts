@@ -30,7 +30,13 @@ export async function GET(request: NextRequest) {
 
     if (error) throw error;
 
-    return NextResponse.json(data);
+    const formattedData = data?.map((item: any) => ({
+      ...item,
+      preset: item.job_presets || item.preset,
+      job_presets: item.job_presets || item.preset,
+    }));
+
+    return NextResponse.json(formattedData);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
@@ -148,7 +154,15 @@ export async function POST(request: NextRequest) {
 
     if (sessionError) throw sessionError;
 
-    return NextResponse.json(session, { status: 201 });
+    const formattedSession = session
+      ? {
+          ...session,
+          preset: session.job_presets || session.preset,
+          job_presets: session.job_presets || session.preset,
+        }
+      : session;
+
+    return NextResponse.json(formattedSession, { status: 201 });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

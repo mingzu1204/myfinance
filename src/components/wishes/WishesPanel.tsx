@@ -528,7 +528,7 @@ function WishModal({ isOpen, onClose, onSaved, editItem }: WishModalProps) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 flex items-end md:items-center justify-center"
+          className="fixed inset-0 z-[100] flex items-end md:items-center justify-center p-0 md:p-4"
           onClick={onClose}
         >
           <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
@@ -537,11 +537,11 @@ function WishModal({ isOpen, onClose, onSaved, editItem }: WishModalProps) {
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: '100%', opacity: 0 }}
             transition={{ type: 'spring', damping: 26, stiffness: 300 }}
-            className="relative w-full max-w-lg bg-[#1a1a1a] rounded-t-3xl md:rounded-2xl border border-[#2a2a2a] max-h-[92vh] overflow-y-auto"
+            className="relative w-full max-w-lg bg-[#1a1a1a] rounded-t-3xl md:rounded-2xl border border-[#2a2a2a] max-h-[90vh] flex flex-col overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="sticky top-0 z-10 bg-[#1a1a1a] flex items-center justify-between px-6 py-4 border-b border-[#2a2a2a]">
+            <div className="shrink-0 bg-[#1a1a1a] flex items-center justify-between px-6 py-4 border-b border-[#2a2a2a]">
               <div className="flex items-center gap-2">
                 <div className="w-7 h-7 rounded-lg bg-violet-600/20 flex items-center justify-center">
                   <Target size={14} className="text-violet-400" />
@@ -558,7 +558,8 @@ function WishModal({ isOpen, onClose, onSaved, editItem }: WishModalProps) {
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6 space-y-5">
+            <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden">
+              <div className="flex-1 overflow-y-auto p-6 space-y-5 pb-6">
               {/* Name */}
               <div className="space-y-1.5">
                 <label className="text-sm font-medium text-gray-300">
@@ -688,19 +689,21 @@ function WishModal({ isOpen, onClose, onSaved, editItem }: WishModalProps) {
                 />
               </div>
 
-              {/* Buttons */}
-              <div className="flex gap-3 pt-2">
+              </div>
+
+              {/* Buttons - Sticky Footer */}
+              <div className="shrink-0 bg-[#1a1a1a] border-t border-[#2a2a2a] px-6 py-4 pb-8 md:pb-4 flex gap-3">
                 <button
                   type="button"
                   onClick={onClose}
-                  className="flex-1 px-4 py-2.5 rounded-xl bg-[#222] text-gray-300 text-sm font-medium hover:bg-[#2a2a2a] border border-[#333] transition-colors"
+                  className="flex-1 py-3 px-4 rounded-xl bg-[#222] text-gray-300 text-sm font-medium hover:bg-[#2a2a2a] border border-[#333] transition-colors"
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="flex-1 px-4 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                  className="flex-1 py-3 px-4 rounded-xl bg-violet-600 hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium transition-colors flex items-center justify-center gap-2 shadow-lg shadow-violet-600/30"
                 >
                   {submitting ? (
                     <>
@@ -742,7 +745,7 @@ function ShiftCalcModal({ item, onClose }: ShiftCalcModalProps) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 flex items-end md:items-center justify-center"
+          className="fixed inset-0 z-[100] flex items-end md:items-center justify-center p-0 md:p-4"
           onClick={onClose}
         >
           <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
@@ -751,7 +754,7 @@ function ShiftCalcModal({ item, onClose }: ShiftCalcModalProps) {
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: '100%', opacity: 0 }}
             transition={{ type: 'spring', damping: 26, stiffness: 300 }}
-            className="relative w-full max-w-sm bg-[#1a1a1a] rounded-t-3xl md:rounded-2xl border border-[#2a2a2a] p-6 space-y-5"
+            className="relative w-full max-w-sm bg-[#1a1a1a] rounded-t-3xl md:rounded-2xl border border-[#2a2a2a] p-6 pb-10 md:pb-6 space-y-5"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between">

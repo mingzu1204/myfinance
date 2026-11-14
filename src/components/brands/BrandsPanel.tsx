@@ -187,12 +187,30 @@ function ApprovalModal({ isOpen, onClose, brand, onSuccess }: ApprovalModalProps
   }
 
   async function handleConfirm() {
-    if (!openCycle) return
     if (!received) { setError('Vui lòng nhập số tiền nhận được'); return }
     setError('')
     setLoading(true)
     try {
-      const res = await fetch(`/api/cycles/${openCycle.id}`, {
+      let cycleId = openCycle?.id
+
+      // If cycle doesn't exist yet in DB, create it first
+      if (!cycleId || cycleId.startsWith('temp-')) {
+        const createRes = await fetch('/api/cycles', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            preset_id: preset.id,
+            start_date: new Date().toISOString().split('T')[0],
+            cycle_number: (brand.closedCycles?.length || 0) + 1,
+            status: 'open',
+          }),
+        })
+        if (!createRes.ok) throw new Error('Không thể tạo chu kỳ lương')
+        const newCycleData = await createRes.json()
+        cycleId = newCycleData.id
+      }
+
+      const res = await fetch(`/api/cycles/${cycleId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ total_received: received, diff_note: note || null }),
@@ -521,9 +539,14 @@ function BrandCard({ data, onApprove }: BrandCardProps) {
                 CHỜ DUYỆT
               </span>
             )}
-            {!hasOpenCycle && (
+            {!hasPending && hasOpenCycle && (
               <span className="bg-green-500/15 text-green-400 text-[10px] font-semibold px-2 py-0.5 rounded-full border border-green-500/20">
                 ĐÃ DUYỆT
+              </span>
+            )}
+            {!hasOpenCycle && (
+              <span className="bg-blue-500/15 text-blue-400 text-[10px] font-semibold px-2 py-0.5 rounded-full border border-blue-500/20">
+                SẴN SÀNG
               </span>
             )}
             <motion.div animate={{ rotate: expanded ? 180 : 0 }}>
@@ -556,13 +579,19 @@ function BrandCard({ data, onApprove }: BrandCardProps) {
             </div>
           </div>
         ) : (
-          <p className="text-sm text-gray-500">Chưa có chu kỳ mở</p>
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-sm text-gray-400">
+              <Calendar size={13} />
+              <span>Chu kỳ mới: <span className="text-gray-300">Tháng {new Date().getMonth() + 1}/{new Date().getFullYear()}</span></span>
+            </div>
+            <p className="text-xs text-gray-500">Chưa có ca làm việc nào trong chu kỳ này</p>
+          </div>
         )}
       </div>
 
       {/* Action buttons */}
-      {hasOpenCycle && (
-        <div className="flex gap-2 px-5 pb-5" onClick={e => e.stopPropagation()}>
+      <div className="flex gap-2 px-5 pb-5" onClick={e => e.stopPropagation()}>
+        {closedCycles.length > 0 && (
           <Button
             variant="secondary"
             size="sm"
@@ -570,20 +599,20 @@ function BrandCard({ data, onApprove }: BrandCardProps) {
             onClick={() => setExpanded(v => !v)}
           >
             <History size={13} />
-            {expanded ? 'Ẩn' : 'Lịch sử'}
+            {expanded ? 'Ẩn lịch sử' : 'Lịch sử chu kỳ'}
           </Button>
-          <Button
-            size="sm"
-            className="flex-1 flex items-center justify-center gap-1.5"
-            style={{ backgroundColor: preset.color + 'dd', borderColor: preset.color }}
-            onClick={onApprove}
-            disabled={sessionCount === 0}
-          >
-            <Banknote size={13} />
-            💰 Duyệt Lương →
-          </Button>
-        </div>
-      )}
+        )}
+        <Button
+          size="sm"
+          className="flex-1 flex items-center justify-center gap-1.5"
+          style={{ backgroundColor: preset.color + 'dd', borderColor: preset.color }}
+          onClick={onApprove}
+          disabled={sessionCount === 0 || !openCycle}
+        >
+          <Banknote size={13} />
+          💰 Duyệt Lương →
+        </Button>
+      </div>
 
       {/* Expanded: sessions + history */}
       <AnimatePresence>
@@ -645,45 +674,52 @@ export default function BrandsPanel() {
         fetch('/api/wishes'),
       ])
 
-      const [presetsData, openCycles, closedCycles, wishData]: [
-        { data: JobPreset[] },
-        { data: SalaryCycle[] },
-        { data: SalaryCycle[] },
-        { data: WishItem[] },
-      ] = await Promise.all([
+      const [presetsData, openCycles, closedCycles, wishData] = await Promise.all([
         presetsRes.json(),
         openCyclesRes.json(),
         closedCyclesRes.json(),
         wishesRes.json(),
       ])
 
-      setWishes(wishData?.data ?? [])
+      const presetsList: JobPreset[] = Array.isArray(presetsData) ? presetsData : (presetsData?.data ?? [])
+      const openList: SalaryCycle[] = Array.isArray(openCycles) ? openCycles : (openCycles?.data ?? [])
+      const closedList: SalaryCycle[] = Array.isArray(closedCycles) ? closedCycles : (closedCycles?.data ?? [])
+      const wishesList: WishItem[] = Array.isArray(wishData) ? wishData : (wishData?.data ?? [])
 
-      const presets: JobPreset[] = presetsData?.data ?? []
-      const open: SalaryCycle[] = openCycles?.data ?? []
-      const closed: SalaryCycle[] = closedCycles?.data ?? []
+      setWishes(wishesList)
 
-      // For each preset, fetch sessions of its open cycle
+      // For each preset, fetch sessions of its open cycle or pending sessions
       const brandDataList: BrandData[] = await Promise.all(
-        presets.map(async (preset) => {
-          const openCycle = open.find(c => c.preset_id === preset.id) ?? null
-          const closedForPreset = closed
+        presetsList.map(async (preset) => {
+          const rawOpenCycle = openList.find(c => c.preset_id === preset.id) ?? null
+          const closedForPreset = closedList
             .filter(c => c.preset_id === preset.id)
             .sort((a, b) => new Date(b.start_date).getTime() - new Date(a.start_date).getTime())
 
           let sessions: WorkSession[] = []
-          if (openCycle) {
-            try {
-              const sessRes = await fetch(`/api/sessions?preset_id=${preset.id}&status=pending`)
-              const sessData = await sessRes.json()
-              sessions = (sessData?.data ?? []) as WorkSession[]
-            } catch {
-              sessions = []
-            }
+          try {
+            const sessRes = await fetch(`/api/sessions?preset_id=${preset.id}&status=pending`)
+            const sessData = await sessRes.json()
+            sessions = (Array.isArray(sessData) ? sessData : (sessData?.data ?? [])) as WorkSession[]
+          } catch {
+            sessions = []
           }
 
           const sessionCount = sessions.length
-          const totalHours = sessions.reduce((sum, s) => sum + Number(s.total_hours), 0)
+          const totalHours = sessions.reduce((sum, s) => sum + Number(s.total_hours || 0), 0)
+          const sessionCalcAmount = sessions.reduce((sum, s) => sum + Number(s.calculated_amount || 0), 0)
+
+          const openCycle: SalaryCycle | null = rawOpenCycle
+            ? { ...rawOpenCycle, total_calculated: Math.max(rawOpenCycle.total_calculated || 0, sessionCalcAmount) }
+            : (sessionCount > 0 ? {
+                id: 'temp-' + preset.id,
+                preset_id: preset.id,
+                cycle_number: closedForPreset.length + 1,
+                start_date: sessions[sessions.length - 1]?.work_date || new Date().toISOString().split('T')[0],
+                total_calculated: sessionCalcAmount,
+                status: 'open',
+                created_at: new Date().toISOString(),
+              } : null)
 
           return { preset, openCycle, closedCycles: closedForPreset, sessions, sessionCount, totalHours }
         })

@@ -268,16 +268,30 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
   const [showResetDialog, setShowResetDialog] = useState(false)
   const [resetting, setResetting] = useState(false)
 
+  const [presetsMap, setPresetsMap] = useState<Record<string, JobPreset>>({})
+
   const fetchDashboardData = useCallback(async () => {
     try {
       setLoading(true)
 
-      const [walletRes, cyclesRes, sessionsRes, recentRes] = await Promise.allSettled([
+      const [walletRes, cyclesRes, sessionsRes, recentRes, presetsRes] = await Promise.allSettled([
         fetch('/api/wallet'),
         fetch('/api/cycles?status=open'),
         fetch('/api/sessions?status=pending'),
-        fetch('/api/sessions?limit=5'),
+        fetch('/api/sessions?limit=10'),
+        fetch('/api/presets'),
       ])
+
+      // Presets mapping
+      const pMap: Record<string, JobPreset> = {}
+      if (presetsRes.status === 'fulfilled' && presetsRes.value.ok) {
+        const pData = await presetsRes.value.json()
+        const pList: JobPreset[] = Array.isArray(pData) ? pData : (pData?.data ?? [])
+        pList.forEach((p) => {
+          if (p?.id) pMap[p.id] = p
+        })
+        setPresetsMap(pMap)
+      }
 
       // Wallet
       if (walletRes.status === 'fulfilled' && walletRes.value.ok) {
@@ -293,12 +307,12 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
 
       if (cyclesRes.status === 'fulfilled' && cyclesRes.value.ok) {
         const data = await cyclesRes.value.json()
-        cycles = Array.isArray(data) ? data : data.cycles ?? []
+        cycles = Array.isArray(data) ? data : (data?.cycles ?? data?.data ?? [])
       }
 
       if (sessionsRes.status === 'fulfilled' && sessionsRes.value.ok) {
         const data = await sessionsRes.value.json()
-        pendingSessions = Array.isArray(data) ? data : data.sessions ?? []
+        pendingSessions = Array.isArray(data) ? data : (data?.sessions ?? data?.data ?? [])
       }
 
       // Compute pending total from cycles
@@ -309,11 +323,12 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
       const groupMap: Record<string, BrandPendingGroup> = {}
       for (const session of pendingSessions) {
         const pid = session.preset_id
+        const presetObj = session.preset || (session as any).job_presets || pMap[pid]
         if (!groupMap[pid]) {
           groupMap[pid] = {
             preset_id: pid,
-            name: session.preset?.name ?? 'Chưa rõ brand',
-            color: session.preset?.color ?? '#7c3aed',
+            name: presetObj?.name ?? 'Công việc',
+            color: presetObj?.color ?? '#7c3aed',
             totalAmount: 0,
             sessionCount: 0,
           }
@@ -326,7 +341,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
       // Recent sessions
       if (recentRes.status === 'fulfilled' && recentRes.value.ok) {
         const data = await recentRes.value.json()
-        const list: WorkSession[] = Array.isArray(data) ? data : data.sessions ?? []
+        const list: WorkSession[] = Array.isArray(data) ? data : (data?.sessions ?? data?.data ?? [])
         setRecentSessions(list.slice(0, 5))
       }
     } catch (err) {
@@ -555,7 +570,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
 
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-white truncate">
-                        {session.preset?.name ?? 'Chưa rõ brand'}
+                        {session.preset?.name ?? (session as any).job_presets?.name ?? presetsMap[session.preset_id]?.name ?? 'Công việc'}
                       </p>
                       <div className="flex items-center gap-2 mt-0.5">
                         <span className="text-xs text-gray-500">{formatDate(session.work_date)}</span>
