@@ -981,7 +981,8 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
                       </p>
                     </div>
                   </motion.li>
-                ))}
+                )
+              })}
               </motion.ul>
             )}
           </div>
