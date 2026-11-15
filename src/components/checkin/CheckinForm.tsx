@@ -15,7 +15,7 @@ import {
 import toast from 'react-hot-toast'
 import { DatePicker, TimePicker } from './ScrollPicker'
 import confetti from 'canvas-confetti'
-import { JobPreset, QuickShift } from '@/lib/types'
+import type { JobPreset, QuickShift } from '@/lib/types'
 import { parsePresetMeta } from '@/lib/metadata'
 import { BrandIcon } from '@/lib/iconRegistry'
 

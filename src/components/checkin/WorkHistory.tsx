@@ -20,7 +20,7 @@ import {
   Trash2,
 } from 'lucide-react'
 import { formatVND, formatHours } from '@/lib/calculations'
-import { WorkSession, JobPreset } from '@/lib/types'
+import type { WorkSession, JobPreset } from '@/lib/types'
 import { parsePresetMeta } from '@/lib/metadata'
 import { BrandIcon } from '@/lib/iconRegistry'
 import toast from 'react-hot-toast'

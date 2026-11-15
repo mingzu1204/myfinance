@@ -1,4 +1,4 @@
-import { JobPresetMeta, WishItemMeta } from './types'
+import type { JobPresetMeta, WishItemMeta } from './types'
 
 export function parsePresetMeta(description?: string | null): JobPresetMeta {
   if (!description) {

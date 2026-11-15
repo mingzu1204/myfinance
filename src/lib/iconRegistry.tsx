@@ -1,4 +1,5 @@
 import React from 'react'
+import type { LucideIcon } from 'lucide-react'
 import {
   UtensilsCrossed,
   Pizza,
@@ -33,7 +34,6 @@ import {
   Sparkles,
   Smile,
   Clock,
-  LucideIcon,
 } from 'lucide-react'
 import { parsePresetMeta } from './metadata'
 
@@ -169,19 +169,20 @@ export function getIconComponent(iconId?: string | null): LucideIcon {
   return ICON_MAP[iconId] || Briefcase
 }
 
-interface BrandIconProps {
+export interface BrandIconProps {
   iconId?: string | null
   description?: string | null
   className?: string
   size?: number
+  style?: React.CSSProperties
 }
 
-export function BrandIcon({ iconId, description, className = 'w-5 h-5', size }: BrandIconProps) {
+export function BrandIcon({ iconId, description, className = 'w-5 h-5', size, style }: BrandIconProps) {
   let resolvedId = iconId
   if (!resolvedId && description) {
     const meta = parsePresetMeta(description)
     resolvedId = meta.icon
   }
   const IconComp = getIconComponent(resolvedId)
-  return <IconComp className={className} size={size} />
+  return <IconComp className={className} size={size} style={style} />
 }

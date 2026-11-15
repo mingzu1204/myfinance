@@ -7,7 +7,7 @@ import {
   CheckCircle2, AlertCircle, TrendingUp, TrendingDown,
   Minus, History, Banknote, Loader2, RefreshCw, Star
 } from 'lucide-react'
-import { JobPreset, SalaryCycle, WorkSession, WishItem, Wallet } from '@/lib/types'
+import type { JobPreset, SalaryCycle, WorkSession, WishItem, Wallet } from '@/lib/types'
 import { formatDate, formatDateTime, cn } from '@/lib/utils'
 import { parsePresetMeta, calculatePaydayRemaining } from '@/lib/metadata'
 import { BrandIcon } from '@/lib/iconRegistry'

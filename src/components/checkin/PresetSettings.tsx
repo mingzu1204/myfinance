@@ -15,7 +15,7 @@ import {
   ChevronRight,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { JobPreset, QuickShift } from '@/lib/types'
+import type { JobPreset, QuickShift } from '@/lib/types'
 import { parsePresetMeta, serializePresetMeta } from '@/lib/metadata'
 import {
   ICON_CATEGORIES,
