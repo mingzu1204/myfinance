@@ -9,6 +9,8 @@ import {
 } from 'lucide-react'
 import { JobPreset, SalaryCycle, WorkSession, WishItem, Wallet } from '@/lib/types'
 import { formatDate, formatDateTime, cn } from '@/lib/utils'
+import { parsePresetMeta, calculatePaydayRemaining } from '@/lib/metadata'
+import { BrandIcon } from '@/lib/iconRegistry'
 import Modal from '@/components/ui/Modal'
 import Button from '@/components/ui/Button'
 
@@ -500,6 +502,9 @@ function BrandCard({ data, onApprove }: BrandCardProps) {
   const { preset, openCycle, closedCycles, sessions, sessionCount } = data
   const [expanded, setExpanded] = useState(false)
 
+  const meta = parsePresetMeta(preset.description)
+  const countdown = calculatePaydayRemaining(meta.payday ?? 10)
+
   const hasOpenCycle = openCycle !== null
   const hasPending = hasOpenCycle && sessionCount > 0
 
@@ -519,18 +524,21 @@ function BrandCard({ data, onApprove }: BrandCardProps) {
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-3">
             <div
-              className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-              style={{ backgroundColor: preset.color + '22' }}
+              className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border"
+              style={{
+                backgroundColor: preset.color + '22',
+                borderColor: preset.color + '55',
+              }}
             >
-              <Building2 size={18} style={{ color: preset.color }} />
+              <BrandIcon iconId={meta.icon} className="w-5 h-5" style={{ color: preset.color } as any} />
             </div>
             <div>
               <h3 className="font-bold text-white text-base uppercase tracking-wide">
                 {preset.name}
               </h3>
-              {preset.description && (
-                <p className="text-xs text-gray-500">{preset.description}</p>
-              )}
+              {meta.desc ? (
+                <p className="text-xs text-gray-500">{meta.desc}</p>
+              ) : null}
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -553,6 +561,26 @@ function BrandCard({ data, onApprove }: BrandCardProps) {
               <ChevronDown size={16} className="text-gray-500" />
             </motion.div>
           </div>
+        </div>
+
+        {/* Payday Countdown Badge */}
+        <div className="mb-3 flex items-center gap-2 flex-wrap">
+          <span className="text-xs text-gray-400 flex items-center gap-1.5">
+            <Calendar size={13} className="text-blue-400" />
+            Lương ngày <strong className="text-gray-200">{meta.payday ?? 10}</strong> hàng tháng
+          </span>
+          <span
+            className={cn(
+              'text-[11px] font-bold px-2 py-0.5 rounded-full border',
+              countdown.isToday
+                ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30 animate-pulse'
+                : countdown.daysRemaining <= 3
+                ? 'bg-amber-500/20 text-amber-400 border-amber-500/30'
+                : 'bg-blue-500/10 text-blue-400 border-blue-500/20'
+            )}
+          >
+            {countdown.isToday ? '🎉 Hôm nay nhận lương!' : `⏳ Còn ${countdown.daysRemaining} ngày`}
+          </span>
         </div>
 
         {/* Cycle info */}

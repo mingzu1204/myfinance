@@ -21,6 +21,8 @@ import {
   X,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { parsePresetMeta, calculatePaydayRemaining } from '@/lib/metadata'
+import { BrandIcon } from '@/lib/iconRegistry'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -32,6 +34,7 @@ interface JobPreset {
   id: string
   name: string
   color?: string
+  description?: string
 }
 
 interface SalaryCycle {
@@ -527,6 +530,21 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
 
   const [presetsMap, setPresetsMap] = useState<Record<string, JobPreset>>({})
 
+  const paydayList = useMemo(() => {
+    const list = Object.values(presetsMap).map((p) => {
+      const meta = parsePresetMeta(p.description)
+      const countdown = calculatePaydayRemaining(meta.payday ?? 10)
+      const brandPending = brandGroups.find((bg) => bg.preset_id === p.id)
+      return {
+        preset: p,
+        meta,
+        countdown,
+        pendingAmount: brandPending?.totalAmount || 0,
+      }
+    })
+    return list.sort((a, b) => a.countdown.daysRemaining - b.countdown.daysRemaining)
+  }, [presetsMap, brandGroups])
+
   const fetchDashboardData = useCallback(async () => {
     try {
       setLoading(true)
@@ -699,6 +717,82 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
           </div>
         )}
 
+        {/* ── Payday Countdown Widget ── */}
+        {!loading && paydayList.length > 0 && (
+          <section>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Calendar size={15} className="text-blue-400" />
+                <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">
+                  Đếm Ngược Ngày Nhận Lương
+                </h2>
+              </div>
+              <button
+                onClick={() => onNavigate?.('brands')}
+                className="text-xs text-violet-400 hover:text-violet-300 flex items-center gap-1 transition-colors"
+              >
+                Tất cả <ChevronRight size={12} />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {paydayList.map(({ preset, meta, countdown, pendingAmount }) => {
+                const color = preset.color || '#7c3aed'
+                return (
+                  <div
+                    key={preset.id}
+                    className="relative overflow-hidden bg-[#1a1a1a] border border-[#2a2a2a] rounded-2xl p-4 flex flex-col justify-between transition-all hover:border-[#3a3a3a]"
+                    style={{ borderLeftWidth: 4, borderLeftColor: color }}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-2.5">
+                        <div
+                          className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border"
+                          style={{
+                            backgroundColor: color + '22',
+                            borderColor: color + '55',
+                          }}
+                        >
+                          <BrandIcon iconId={meta.icon} className="w-5 h-5" style={{ color } as any} />
+                        </div>
+                        <div>
+                          <p className="font-semibold text-white text-sm">{preset.name}</p>
+                          <p className="text-[11px] text-gray-400">
+                            Ngày {meta.payday ?? 10} hàng tháng
+                          </p>
+                        </div>
+                      </div>
+
+                      <span
+                        className={`text-xs font-bold px-2.5 py-1 rounded-full border ${
+                          countdown.isToday
+                            ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40 animate-pulse'
+                            : countdown.daysRemaining <= 3
+                            ? 'bg-amber-500/20 text-amber-400 border-amber-500/30'
+                            : 'bg-blue-500/10 text-blue-400 border-blue-500/20'
+                        }`}
+                      >
+                        {countdown.isToday
+                          ? '🎉 Hôm nay nhận!'
+                          : countdown.daysRemaining === 1
+                          ? '⏳ Ngày mai!'
+                          : `⏳ Còn ${countdown.daysRemaining} ngày`}
+                      </span>
+                    </div>
+
+                    <div className="mt-3 pt-2.5 border-t border-[#252525] flex items-center justify-between text-xs">
+                      <span className="text-gray-400">Lương dự kiến:</span>
+                      <span className="font-bold text-amber-400 font-mono text-sm">
+                        {formatVND(pendingAmount)}
+                      </span>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </section>
+        )}
+
         {/* ── Pending Brands ── */}
         {(loading || brandGroups.length > 0) && (
           <section>
@@ -717,34 +811,39 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
                   initial="hidden"
                   animate="visible"
                 >
-                  {brandGroups.map((brand) => (
-                    <motion.li
-                      key={brand.preset_id}
-                      variants={staggerItem}
-                      className="flex items-center gap-3 px-4 py-3.5 hover:bg-[#222] transition-colors"
-                    >
-                      <div
-                        className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-xs font-bold text-white"
-                        style={{ backgroundColor: brand.color + '33', borderColor: brand.color + '66', border: '1px solid' }}
+                  {brandGroups.map((brand) => {
+                    const pObj = presetsMap[brand.preset_id]
+                    const meta = parsePresetMeta(pObj?.description)
+                    return (
+                      <motion.li
+                        key={brand.preset_id}
+                        variants={staggerItem}
+                        className="flex items-center gap-3 px-4 py-3.5 hover:bg-[#222] transition-colors"
                       >
-                        <span style={{ color: brand.color }}>
-                          {brand.name.slice(0, 2).toUpperCase()}
-                        </span>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-white truncate">{brand.name}</p>
-                        <p className="text-xs text-gray-500">{brand.sessionCount} ca làm việc</p>
-                      </div>
-                      <div className="flex flex-col items-end gap-1 shrink-0">
-                        <span className="text-sm font-semibold text-amber-400">
-                          {formatVND(brand.totalAmount)}
-                        </span>
-                        <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                          Chờ duyệt
-                        </span>
-                      </div>
-                    </motion.li>
-                  ))}
+                        <div
+                          className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border"
+                          style={{
+                            backgroundColor: brand.color + '22',
+                            borderColor: brand.color + '55',
+                          }}
+                        >
+                          <BrandIcon iconId={meta.icon} className="w-5 h-5" style={{ color: brand.color } as any} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-white truncate">{brand.name}</p>
+                          <p className="text-xs text-gray-500">{brand.sessionCount} ca làm việc</p>
+                        </div>
+                        <div className="flex flex-col items-end gap-1 shrink-0">
+                          <span className="text-sm font-semibold text-amber-400">
+                            {formatVND(brand.totalAmount)}
+                          </span>
+                          <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                            Chờ duyệt
+                          </span>
+                        </div>
+                      </motion.li>
+                    )
+                  })}
                 </motion.ul>
               )}
             </div>
@@ -815,26 +914,36 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
                 animate="visible"
                 className="divide-y divide-[#2a2a2a]"
               >
-                {recentSessions.map((session, idx) => (
-                  <motion.li
-                    key={session.id}
-                    variants={staggerItem}
-                    className="flex items-center gap-3 px-4 py-3.5 hover:bg-[#222] transition-colors"
-                  >
-                    {/* Timeline dot */}
-                    <div className="flex flex-col items-center shrink-0">
-                      <div className="w-9 h-9 rounded-xl bg-[#222] border border-[#333] flex items-center justify-center">
-                        <Timer size={15} className="text-violet-400" />
+                {recentSessions.map((session, idx) => {
+                  const pObj = session.preset || (session as any).job_presets || presetsMap[session.preset_id]
+                  const meta = parsePresetMeta(pObj?.description)
+                  const pColor = pObj?.color || '#7c3aed'
+                  return (
+                    <motion.li
+                      key={session.id}
+                      variants={staggerItem}
+                      className="flex items-center gap-3 px-4 py-3.5 hover:bg-[#222] transition-colors"
+                    >
+                      {/* Timeline dot */}
+                      <div className="flex flex-col items-center shrink-0">
+                        <div
+                          className="w-9 h-9 rounded-xl flex items-center justify-center border"
+                          style={{
+                            backgroundColor: pColor + '22',
+                            borderColor: pColor + '55',
+                          }}
+                        >
+                          <BrandIcon iconId={meta.icon} className="w-4 h-4" style={{ color: pColor } as any} />
+                        </div>
+                        {idx < recentSessions.length - 1 && (
+                          <div className="w-px h-full bg-[#2a2a2a] mt-1" />
+                        )}
                       </div>
-                      {idx < recentSessions.length - 1 && (
-                        <div className="w-px h-full bg-[#2a2a2a] mt-1" />
-                      )}
-                    </div>
 
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-white truncate">
-                        {session.preset?.name ?? (session as any).job_presets?.name ?? presetsMap[session.preset_id]?.name ?? 'Công việc'}
-                      </p>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-white truncate">
+                          {pObj?.name ?? 'Công việc'}
+                        </p>
                       <div className="flex items-center gap-2 mt-0.5">
                         <span className="text-xs text-gray-500">{formatDate(session.work_date)}</span>
                         <span className="text-gray-700">·</span>
