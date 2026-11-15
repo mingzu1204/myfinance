@@ -198,7 +198,9 @@ function WishCard({
         {/* Affordable badge */}
         {isAffordable && (
           <div className="absolute top-3 left-3 z-20 flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/40 backdrop-blur-md">
-            <span className="text-emerald-400 text-xs font-semibold">✅ Đủ tiền mua rồi!</span>
+            <span className="text-emerald-400 text-xs font-semibold flex items-center gap-1">
+              <CheckCircle2 size={13} /> Đủ tiền mua rồi!
+            </span>
           </div>
         )}
 
@@ -236,7 +238,9 @@ function WishCard({
           {/* Name + Priority */}
           <div className="flex items-start justify-between gap-2">
             <div>
-              <p className="font-semibold text-white text-base leading-tight">🎯 {item.name}</p>
+              <p className="font-semibold text-white text-base leading-tight flex items-center gap-1.5">
+                <Target size={15} className="text-violet-400 shrink-0" /> {item.name}
+              </p>
               {meta.note && <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{meta.note}</p>}
             </div>
             <StarRating value={item.priority} readonly />
@@ -282,12 +286,14 @@ function WishCard({
               </p>
               {progress.daysLeft > 0 && (
                 <p className="text-gray-400">
-                  Dự kiến: <span className="text-amber-400 font-medium">~{progress.daysLeft} ngày nữa</span> ✨
+                  Dự kiến: <span className="text-amber-400 font-medium">~{progress.daysLeft} ngày nữa</span>
                 </p>
               )}
             </div>
           ) : (
-            <p className="text-xs text-emerald-400 font-medium">✨ Bạn đã có đủ tiền để sở hữu món đồ này!</p>
+            <p className="text-xs text-emerald-400 font-medium flex items-center gap-1">
+              <CheckCircle2 size={13} /> Bạn đã có đủ tiền để sở hữu món đồ này!
+            </p>
           )}
 
           {/* Quick Actions (Buy Now & Piggy Bank) */}
@@ -445,7 +451,9 @@ function TrophyCard({ item, onRevert, onDelete }: TrophyCardProps) {
           <Trophy size={13} className="text-amber-400" />
           ĐÃ SỞ HỮU
         </span>
-        <span className="text-xs text-gray-400">🗓️ {formattedDate}</span>
+        <span className="text-xs text-gray-400 flex items-center gap-1">
+          <Calendar size={12} /> {formattedDate}
+        </span>
       </div>
 
       {/* Image if available */}
@@ -464,7 +472,9 @@ function TrophyCard({ item, onRevert, onDelete }: TrophyCardProps) {
 
       {/* Name and Price */}
       <div>
-        <h4 className="font-bold text-white text-base leading-tight">🏆 {item.name}</h4>
+        <h4 className="font-bold text-white text-base leading-tight flex items-center gap-1.5">
+          <Trophy size={15} className="text-amber-400 shrink-0" /> {item.name}
+        </h4>
         <p className="text-amber-400 font-extrabold text-lg mt-0.5">{formatVND(item.price_vnd)}</p>
       </div>
 
@@ -566,7 +576,7 @@ function BuyNowModal({ item, cashBalance, avgHourlyRate, onClose, onSuccess }: B
         colors: ['#f59e0b', '#fbbf24', '#10b981', '#7c3aed'],
       })
 
-      toast.success(`🎉 Chúc mừng! Bạn đã rước thành công "${item.name}"!`)
+      toast.success(`Chúc mừng! Bạn đã rước thành công "${item.name}"!`)
       onSuccess()
       onClose()
     } catch (err: any) {
@@ -606,7 +616,9 @@ function BuyNowModal({ item, cashBalance, avgHourlyRate, onClose, onSuccess }: B
           {/* Item Info Card */}
           <div className="p-4 bg-[#141414] border border-[#282828] rounded-2xl space-y-2">
             <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold">Mục tiêu mua sắm</p>
-            <p className="font-bold text-white text-lg">🎯 {item.name}</p>
+            <p className="font-bold text-white text-lg flex items-center gap-2">
+              <Target size={16} className="text-violet-400 shrink-0" /> {item.name}
+            </p>
             <p className="text-xl font-extrabold text-violet-400">{formatVND(item.price_vnd)}</p>
           </div>
 
@@ -663,7 +675,7 @@ function BuyNowModal({ item, cashBalance, avgHourlyRate, onClose, onSuccess }: B
               {submitting ? (
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
               ) : (
-                '🛍️ Xác Nhận Mua'
+                'Xác Nhận Mua'
               )}
             </button>
           </div>
@@ -748,7 +760,9 @@ function PiggyBankModal({ item, cashBalance, onClose, onSuccess }: PiggyBankModa
 
           <div className="p-3 bg-[#141414] border border-[#252525] rounded-xl space-y-1">
             <p className="text-xs text-gray-400">Dành riêng cho món đồ:</p>
-            <p className="font-bold text-white text-sm">🎯 {item.name}</p>
+            <p className="font-bold text-white text-sm flex items-center gap-1.5">
+              <Target size={14} className="text-pink-400 shrink-0" /> {item.name}
+            </p>
             <p className="text-xs text-gray-500">Giá trị món đồ: {formatVND(item.price_vnd)}</p>
           </div>
 
@@ -973,7 +987,7 @@ function WishModal({ isOpen, onClose, onSaved, editItem }: WishModalProps) {
             {/* Header */}
             <div className="flex items-center justify-between p-5 border-b border-[#2a2a2a] shrink-0">
               <h3 className="font-bold text-white text-base">
-                {isEdit ? '✏️ Chỉnh Sửa Mục Tiêu' : '🎯 Thêm Mục Tiêu Mới'}
+                {isEdit ? 'Chỉnh Sửa Mục Tiêu' : 'Thêm Mục Tiêu Mới'}
               </h3>
               <button onClick={onClose} className="p-1 text-gray-500 hover:text-white rounded-lg">
                 <X size={16} />
@@ -1551,7 +1565,7 @@ export default function WishesPanel({ onNavigate: _onNavigate }: WishesPanelProp
               <div className="text-center">
                 <p className="text-sm font-semibold text-gray-400">Bức tường thành tựu đang trống</p>
                 <p className="text-xs text-gray-600 mt-1">
-                  Khi bạn hoàn thành và ấn "Rước về ngay", các chiến tích sẽ được trưng bày tại đây! 🏆
+                  Khi bạn hoàn thành và ấn "Rước về ngay", các chiến tích sẽ được trưng bày tại đây!
                 </p>
               </div>
             </motion.div>
@@ -1559,7 +1573,9 @@ export default function WishesPanel({ onNavigate: _onNavigate }: WishesPanelProp
             <div className="space-y-4">
               <div className="p-4 bg-gradient-to-r from-amber-950/30 to-[#181611] border border-amber-500/30 rounded-2xl flex items-center justify-between">
                 <div>
-                  <h3 className="font-bold text-amber-300 text-sm">🏆 Bức Tường Thành Tựu</h3>
+                  <h3 className="font-bold text-amber-300 text-sm flex items-center gap-1.5">
+                    <Trophy size={15} className="text-amber-400" /> Bức Tường Thành Tựu
+                  </h3>
                   <p className="text-xs text-amber-200/60 mt-0.5">
                     Tổng cộng {trophyWishes.length} món đồ bạn đã đổ mồ hôi cày cuốc để sở hữu!
                   </p>

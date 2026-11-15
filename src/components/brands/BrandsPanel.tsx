@@ -91,7 +91,7 @@ function SuccessOverlay({ received, brandName, newBalance, wishes, onClose }: Su
           transition={{ delay: 0.2 }}
           className="text-xl font-bold text-white mb-1"
         >
-          Nhận lương thành công! 🎉
+          Nhận lương thành công!
         </motion.h3>
 
         <motion.p
@@ -340,7 +340,7 @@ function ApprovalModal({ isOpen, onClose, brand, onSuccess }: ApprovalModalProps
             loading={loading}
             disabled={!received || loading}
           >
-            ✅ Xác nhận nhận lương
+            <CheckCircle2 size={16} /> Xác nhận nhận lương
           </Button>
         </div>
       </div>
@@ -579,7 +579,15 @@ function BrandCard({ data, onApprove }: BrandCardProps) {
                 : 'bg-blue-500/10 text-blue-400 border-blue-500/20'
             )}
           >
-            {countdown.isToday ? '🎉 Hôm nay nhận lương!' : `⏳ Còn ${countdown.daysRemaining} ngày`}
+            {countdown.isToday ? (
+              <span className="flex items-center gap-1">
+                <Sparkles size={11} /> Hôm nay nhận lương!
+              </span>
+            ) : (
+              <span className="flex items-center gap-1">
+                <Clock size={11} /> Còn {countdown.daysRemaining} ngày
+              </span>
+            )}
           </span>
         </div>
 
@@ -638,7 +646,7 @@ function BrandCard({ data, onApprove }: BrandCardProps) {
           disabled={sessionCount === 0 || !openCycle}
         >
           <Banknote size={13} />
-          💰 Duyệt Lương →
+          Duyệt Lương →
         </Button>
       </div>
 

@@ -348,8 +348,8 @@ export default function WorkHistory() {
               className="w-full bg-[#111] border border-[#2a2a2a] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-violet-500"
             >
               <option value="all">Tất cả trạng thái</option>
-              <option value="pending">⏳ Chờ nhận lương</option>
-              <option value="approved">✅ Đã duyệt lương</option>
+              <option value="pending">Chờ nhận lương</option>
+              <option value="approved">Đã duyệt lương</option>
             </select>
           </div>
         </div>

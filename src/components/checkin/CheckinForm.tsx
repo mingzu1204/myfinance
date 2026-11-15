@@ -129,8 +129,8 @@ function CelebrationModal({ visible, totalHours, nightHours, amount, nightPct, o
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
             className="w-full max-w-sm bg-[#1a1a1a] border border-[#2a2a2a] rounded-3xl p-6 text-center space-y-4 shadow-2xl"
           >
-            <div className="w-16 h-16 rounded-2xl bg-violet-600/20 border border-violet-500/30 flex items-center justify-center mx-auto text-3xl">
-              🎉
+            <div className="w-16 h-16 rounded-2xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center mx-auto">
+              <Sparkles className="w-8 h-8 text-amber-400" />
             </div>
 
             <div>
@@ -347,7 +347,7 @@ export default function CheckinForm() {
     setCheckOutHour(endH)
     setCheckOutMinute(endM || 0)
 
-    toast.success(`⚡ Đã điền nhanh: ${qs.name} (${qs.start_time} - ${qs.end_time})`)
+    toast.success(`Đã điền nhanh: ${qs.name} (${qs.start_time} - ${qs.end_time})`)
   }
 
   const handleSubmit = async () => {
@@ -524,7 +524,7 @@ export default function CheckinForm() {
             </button>
           </div>
 
-          {/* ⚡ Quick Shifts 1-Touch Toolbar */}
+          {/* Quick Shifts 1-Touch Toolbar */}
           <div className="bg-[#161616] border border-[#2a2a2a] rounded-2xl p-3.5 space-y-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5">
@@ -628,7 +628,7 @@ export default function CheckinForm() {
           </button>
 
           {checkOut <= checkIn && (
-            <p className="text-center text-red-400 text-xs">⚠️ Giờ ra phải sau giờ vào. Nếu là ca đêm qua ngày hôm sau, vui lòng chọn ngày ra là ngày mai.</p>
+            <p className="text-center text-red-400 text-xs">Giờ ra phải sau giờ vào. Nếu là ca đêm qua ngày hôm sau, vui lòng chọn ngày ra là ngày mai.</p>
           )}
         </div>
       )}

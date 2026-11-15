@@ -772,11 +772,19 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
                             : 'bg-blue-500/10 text-blue-400 border-blue-500/20'
                         }`}
                       >
-                        {countdown.isToday
-                          ? '🎉 Hôm nay nhận!'
-                          : countdown.daysRemaining === 1
-                          ? '⏳ Ngày mai!'
-                          : `⏳ Còn ${countdown.daysRemaining} ngày`}
+                        {countdown.isToday ? (
+                          <span className="flex items-center gap-1">
+                            <Sparkles size={11} /> Hôm nay nhận!
+                          </span>
+                        ) : countdown.daysRemaining === 1 ? (
+                          <span className="flex items-center gap-1">
+                            <Clock size={11} /> Ngày mai!
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-1">
+                            <Clock size={11} /> Còn {countdown.daysRemaining} ngày
+                          </span>
+                        )}
                       </span>
                     </div>
 
@@ -986,7 +994,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
             className="text-xs text-red-900 hover:text-red-600 flex items-center gap-1.5 px-4 py-2 rounded-xl hover:bg-red-500/5 transition-all border border-transparent hover:border-red-900/30"
           >
             <AlertTriangle size={12} />
-            ⚠️ Reset dữ liệu
+            <span>Reset dữ liệu</span>
           </button>
         </section>
       </div>

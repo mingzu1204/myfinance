@@ -21,7 +21,9 @@ export default function Home() {
       {/* Desktop Sidebar */}
       <aside className="hidden md:flex flex-col w-64 bg-[#1a1a1a] border-r border-[#2a2a2a] p-6 gap-2 fixed h-full">
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-violet-400">💰 MyFinance</h1>
+          <h1 className="text-2xl font-bold text-violet-400 flex items-center gap-2">
+            <LayoutDashboard className="w-6 h-6 text-violet-400" /> MyFinance
+          </h1>
           <p className="text-xs text-gray-500 mt-1">Quản lý tài chính cá nhân</p>
         </div>
         {tabs.map(tab => (
